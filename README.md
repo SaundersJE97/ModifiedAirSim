@@ -303,7 +303,35 @@ Now to remove collisions between 'Pawns', we need to ignore the event 'ActorBegi
 
 Agents will interact with the environment without interacting with each other.
 
+## Evaluating the policy
 
+The code on lines 21-26 in Simulation.py is the stored location of where the drones will start and where the end goal is.  Please replace these with the test corridor in the map (or make your own) with the coordinates in the unreal engine.  Then the function ‘convert_pos_UE_to_AS’ will convert these coordinates to the airsim coordinate frame.  E.g
+```
+self.areans_train_long = np.array([
+    [Utils.convert_pos_UE_to_AS(self.origin_UE, np.array([start_x, start_y, start_z])), Utils.convert_pos_UE_to_AS(self.origin_UE, np.array([end_x, end_y, end_z]))]
+])
+```
+Where start and end are the coordinates in the unreal engine editor.
+ 
+Then, in lines 50-51 in PyClient.py, you will find the code to load the model.  Replace the arguments of ‘load(…)’ with the path of the pth file created after training.
+
+```
+print("loaded best model")
+agent.load('{}/BestModelSaves/dqn.pth'.format(pathlib.Path().resolve()))
+```
+
+You will also need to set epsilon to 0 in line 47 to ensure greedy actions are taken.
+
+```
+agent = DQNTrainer.DQNTrainer(image_input_dims=Utils.getConfig()['state_space'],
+                              n_actions=Utils.getConfig()['action_space'],
+                              replayMemory_size=Utils.getConfig()['buffer_Size'],
+                              batch_size=Utils.getConfig()['batch_size'],
+                              learningRate=Utils.getConfig()['learning_rate'],
+                              discount_factor=Utils.getConfig()['discount_factor'],
+                              epsilon=0.0,  # <----------- this has been changed to 0.0
+                              replace_target_count_episode=Utils.getConfig()['replace_target_count_episode'])
+```
 
 # Potential Issues and Confusions
 
