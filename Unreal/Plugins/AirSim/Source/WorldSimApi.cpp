@@ -26,18 +26,10 @@ bool WorldSimApi::loadLevel(const std::string& level_name)
     // Add loading screen to viewport
     simmode_->toggleLoadingScreen(true);
     std::this_thread::sleep_for(0.1s);
-    UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {
-        this->current_level_ = UAirBlueprintLib::loadLevel(this->simmode_->GetWorld(), FString(level_name.c_str()));
+    UAirBlueprintLib::RunCommandOnGameThread([this, level_name, &success]() {
+        success = UAirBlueprintLib::loadLevel(this->simmode_->GetWorld(), FString(level_name.c_str()));
     },
                                              true);
-
-    if (this->current_level_) {
-        success = true;
-        std::this_thread::sleep_for(1s);
-        spawnPlayer();
-    }
-    else
-        success = false;
 
     //Remove Loading screen from viewport
     UAirBlueprintLib::RunCommandOnGameThread([this, level_name]() {
@@ -521,10 +513,10 @@ std::unique_ptr<std::vector<std::string>> WorldSimApi::swapTextures(const std::s
     return swappedObjectNames;
 }
 
-bool WorldSimApi::setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path)
+bool WorldSimApi::setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id)
 {
     bool success = false;
-    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &texture_path, &success]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &texture_path, &success, &component_id]() {
         if (!IsValid(simmode_->domain_rand_material_)) {
             UAirBlueprintLib::LogMessageString("Cannot find material for domain randomization",
                                                "",
@@ -540,7 +532,7 @@ bool WorldSimApi::setObjectMaterialFromTexture(const std::string& object_name, c
                 for (UStaticMeshComponent* staticMeshComponent : components) {
                     UMaterialInstanceDynamic* dynamic_material = UMaterialInstanceDynamic::Create(simmode_->domain_rand_material_, staticMeshComponent);
                     dynamic_material->SetTextureParameterValue("TextureParameter", texture_desired);
-                    staticMeshComponent->SetMaterial(0, dynamic_material);
+                    staticMeshComponent->SetMaterial(component_id, dynamic_material);
                 }
                 success = true;
             }
@@ -556,10 +548,10 @@ bool WorldSimApi::setObjectMaterialFromTexture(const std::string& object_name, c
     return success;
 }
 
-bool WorldSimApi::setObjectMaterial(const std::string& object_name, const std::string& material_name)
+bool WorldSimApi::setObjectMaterial(const std::string& object_name, const std::string& material_name, const int component_id)
 {
     bool success = false;
-    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &material_name, &success]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, &object_name, &material_name, &success, &component_id]() {
         AActor* actor = UAirBlueprintLib::FindActor<AActor>(simmode_, FString(object_name.c_str()));
         UMaterial* material = static_cast<UMaterial*>(StaticLoadObject(UMaterial::StaticClass(), nullptr, *FString(material_name.c_str())));
 
@@ -573,7 +565,7 @@ bool WorldSimApi::setObjectMaterial(const std::string& object_name, const std::s
                 TArray<UStaticMeshComponent*> components;
                 actor->GetComponents<UStaticMeshComponent>(components);
                 for (UStaticMeshComponent* staticMeshComponent : components) {
-                    staticMeshComponent->SetMaterial(0, material);
+                    staticMeshComponent->SetMaterial(component_id, material);
                 }
                 success = true;
             }
@@ -888,7 +880,6 @@ std::vector<msr::airlib::GeoPoint> WorldSimApi::getWorldExtents() const
 
     return result;
 }
-
 msr::airlib::CameraInfo WorldSimApi::getCameraInfo(const CameraDetails& camera_details) const
 {
     msr::airlib::CameraInfo info;

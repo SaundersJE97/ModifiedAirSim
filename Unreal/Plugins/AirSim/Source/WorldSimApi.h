@@ -7,7 +7,6 @@
 #include "SimMode/SimModeBase.h"
 #include "Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
-#include "Engine/LevelStreamingDynamic.h"
 #include <string>
 
 class WorldSimApi : public msr::airlib::WorldSimApiBase
@@ -55,8 +54,8 @@ public:
 
     virtual bool setLightIntensity(const std::string& light_name, float intensity) override;
     virtual std::unique_ptr<std::vector<std::string>> swapTextures(const std::string& tag, int tex_id = 0, int component_id = 0, int material_id = 0) override;
-    virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name) override;
-    virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path) override;
+    virtual bool setObjectMaterial(const std::string& object_name, const std::string& material_name, const int component_id = 0) override;
+    virtual bool setObjectMaterialFromTexture(const std::string& object_name, const std::string& texture_path, const int component_id = 0) override;
     virtual std::vector<std::string> listSceneObjects(const std::string& name_regex) const override;
     virtual Pose getObjectPose(const std::string& object_name) const override;
     virtual bool setObjectPose(const std::string& object_name, const Pose& pose, bool teleport) override;
@@ -136,6 +135,5 @@ private:
 
 private:
     ASimModeBase* simmode_;
-    ULevelStreamingDynamic* current_level_;
     std::vector<bool> voxel_grid_;
 };
