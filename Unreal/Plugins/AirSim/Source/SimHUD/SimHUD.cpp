@@ -22,9 +22,12 @@ void ASimHUD::BeginPlay()
 
     try {
         UAirBlueprintLib::OnBeginPlay();
+        initializeSettings();
         loadLevel();
 
-        initializeSettings();
+        // Prevent a MavLink connection being established if changing levels
+        if (map_changed_) return;
+
         setUnrealEngineSettings();
         createSimMode();
         createMainWidget();
@@ -253,11 +256,9 @@ std::string ASimHUD::getSimModeFromUser()
 
 void ASimHUD::loadLevel()
 {
-    if (AirSimSettings::singleton().level_name != "")
-        UAirBlueprintLib::RunCommandOnGameThread([&]() { UAirBlueprintLib::loadLevel(this->GetWorld(), FString(AirSimSettings::singleton().level_name.c_str())); }, true);
-    else
-        UAirBlueprintLib::RunCommandOnGameThread([&]() { UAirBlueprintLib::loadLevel(this->GetWorld(), FString("Blocks")); }, true);
+    UAirBlueprintLib::RunCommandOnGameThread([&]() { this->map_changed_ = UAirBlueprintLib::loadLevel(this->GetWorld(), FString(AirSimSettings::singleton().level_name.c_str())); }, true);
 }
+
 void ASimHUD::createSimMode()
 {
     std::string simmode_name = AirSimSettings::singleton().simmode_name;
